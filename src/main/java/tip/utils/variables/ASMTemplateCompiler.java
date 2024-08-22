@@ -53,8 +53,7 @@ public class ASMTemplateCompiler {
             mv.visitTypeInsn(NEW, "java/lang/StringBuilder");
             mv.visitInsn(DUP);
             mv.visitMethodInsn(INVOKESPECIAL, "java/lang/StringBuilder", "<init>", "()V", false);
-
-            // 解析模板并生成字节码
+// 解析模板并生成字节码
             int lastIndex = 0;
             java.util.regex.Matcher matcher = variablePattern.matcher(template);
 
@@ -64,15 +63,27 @@ public class ASMTemplateCompiler {
                     mv.visitLdcInsn(template.substring(lastIndex, matcher.start()));
                     mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/StringBuilder", "append", "(Ljava/lang/String;)Ljava/lang/StringBuilder;", false);
                 }
+
                 // 插入变量片段
                 mv.visitVarInsn(ALOAD, 1);  // 加载Map对象
-                mv.visitLdcInsn("{" + matcher.group(1) + "}");// 变量有大括号
+                mv.visitLdcInsn("{" + matcher.group(1) + "}");  // 变量有大括号
                 mv.visitMethodInsn(INVOKEINTERFACE, "java/util/Map", "get", "(Ljava/lang/Object;)Ljava/lang/Object;", true);
-                mv.visitTypeInsn(CHECKCAST, "java/lang/String");
+
+                // 判断是否为null，如果是null，使用原始变量字符串
+                Label notNullLabel = new Label();
+                mv.visitInsn(DUP);  // 复制Map.get的结果到栈顶
+                mv.visitJumpInsn(IFNONNULL, notNullLabel);  // 如果非null跳到notNullLabel
+                mv.visitInsn(POP);  // 弹出null值
+                mv.visitLdcInsn("{" + matcher.group(1) + "}");  // 使用原始变量字符串
+                mv.visitJumpInsn(GOTO, notNullLabel);
+
+                mv.visitLabel(notNullLabel);  // 标签位置
+                mv.visitTypeInsn(CHECKCAST, "java/lang/String");  // 将结果转换为String
                 mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/StringBuilder", "append", "(Ljava/lang/String;)Ljava/lang/StringBuilder;", false);
 
                 lastIndex = matcher.end();
             }
+
 
             // 插入最后的静态字符串片段
             if (lastIndex < template.length()) {

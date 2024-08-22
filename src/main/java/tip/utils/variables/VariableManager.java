@@ -31,8 +31,7 @@ public final class VariableManager {
     private final LinkedHashMap<String, String> variables = new LinkedHashMap<>();
 
     public synchronized String toMessage(Player player, String msg) {
-        String message = msg;
-        if (message == null) {
+        if (msg == null) {
             return "";
         }
         for (BaseVariable variable : variablesClass) {
@@ -47,7 +46,7 @@ public final class VariableManager {
         }
         variables.putAll(otherVariables);
 
-        return compile(message).strReplace(variables);
+        return compile(msg).strReplace(variables);
     }
 
 }
